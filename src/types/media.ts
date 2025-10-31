@@ -6,7 +6,7 @@ export interface Media {
   budget: string;
   location: string;
   duration: string;
-  yearTime: string;
+  year_time: string;
   description?: string;
   imageUrl?: string;
   createdAt: string;
@@ -20,7 +20,7 @@ export interface MediaCreate {
   budget: string;
   location: string;
   duration: string;
-  yearTime: string;
+  year_time: string;
   description?: string;
   imageFile?: File; 
 }

@@ -17,12 +17,25 @@ import {
   MenuItem,
   Grid,
   InputAdornment,
+  Avatar,
+  Dialog,
+  DialogContent,
+  Card,
+  CardContent,
+  Divider,
 } from '@mui/material';
 import {
   Edit as EditIcon,
   Delete as DeleteIcon,
   Search as SearchIcon,
   Clear as ClearIcon,
+  Visibility as ViewIcon,
+  Schedule as DurationIcon,
+  LocationOn as LocationIcon,
+  Person as DirectorIcon,
+  AttachMoney as BudgetIcon,
+  CalendarToday as YearIcon,
+  Theaters as TypeIcon,
 } from '@mui/icons-material';
 import { Media } from '../types/media';
 
@@ -49,14 +62,38 @@ export const MediaTable: React.FC<MediaTableProps> = ({
   const [searchTerm, setSearchTerm] = useState('');
   const [typeFilter, setTypeFilter] = useState<'All' | 'Movie' | 'TV Show'>('All');
   const [directorFilter, setDirectorFilter] = useState('');
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [selectedMedia, setSelectedMedia] = useState<Media | null>(null);
 
-  // Get unique directors for the filter dropdown
+  const getImageUrl = (imageUrl: string | undefined): string | undefined => {
+    if (!imageUrl) return undefined;
+    if (imageUrl.startsWith('http')) return imageUrl;
+    return `http://localhost:5000${imageUrl}`;
+  };
+
+  const handleImagePreview = (mediaItem: Media) => {
+    if (mediaItem.imageUrl) {
+      const fullImageUrl = getImageUrl(mediaItem.imageUrl);
+      if (fullImageUrl) {
+        setImagePreview(fullImageUrl);
+        setSelectedMedia(mediaItem);
+        setPreviewOpen(true);
+      }
+    }
+  };
+
+  const closeImagePreview = () => {
+    setPreviewOpen(false);
+    setImagePreview(null);
+    setSelectedMedia(null);
+  };
+
   const uniqueDirectors = useMemo(() => {
     const directors = media.map(item => item.director).filter(Boolean);
     return [...new Set(directors)].sort();
   }, [media]);
 
-  // Filter media based on search term and filters
   const filteredMedia = useMemo(() => {
     return media.filter(item => {
       const matchesSearch = searchTerm === '' || 
@@ -116,8 +153,172 @@ export const MediaTable: React.FC<MediaTableProps> = ({
 
   return (
     <div className="space-y-4">
+      {/* Image Preview Dialog with Movie Details */}
+      <Dialog
+        open={previewOpen}
+        onClose={closeImagePreview}
+        maxWidth="lg"
+        fullWidth
+        className="rounded-lg"
+      >
+        <DialogContent className="p-0">
+          {selectedMedia && (
+            <Card className="w-full">
+              <CardContent className="p-0">
+                <Grid container>
+                  {/* Image Section */}
+                  <Grid item xs={12} md={6}>
+                    <Box className="p-4 flex justify-center items-center h-full bg-gray-50">
+                      {imagePreview && (
+                        <img
+                          src={imagePreview}
+                          alt={selectedMedia.title}
+                          className="w-full max-w-md h-auto max-h-[70vh] object-contain rounded-lg shadow-2xl"
+                        />
+                      )}
+                    </Box>
+                  </Grid>
+                  
+                  {/* Details Section */}
+                  <Grid item xs={12} md={6}>
+                    <Box className="p-6">
+                      {/* Title and Type */}
+                      <Box className="mb-4">
+                        <Typography variant="h4" component="h2" className="font-bold text-gray-900 mb-2">
+                          {selectedMedia.title}
+                        </Typography>
+                        <Chip
+                          icon={<TypeIcon />}
+                          label={selectedMedia.type}
+                          color={selectedMedia.type === 'Movie' ? 'primary' : 'secondary'}
+                          className="mb-3"
+                        />
+                      </Box>
+
+                      <Divider className="my-4" />
+
+                      {/* Description */}
+                      {selectedMedia.description && (
+                        <Box className="mb-4">
+                          <Typography variant="body1" className="text-gray-700 leading-relaxed">
+                            {selectedMedia.description}
+                          </Typography>
+                        </Box>
+                      )}
+
+                      {/* Details Grid */}
+                      <Grid container spacing={3} className="mb-4">
+                        <Grid item xs={6}>
+                          <Box className="flex items-center space-x-2">
+                            <DirectorIcon className="text-blue-600" />
+                            <Box>
+                              <Typography variant="caption" className="text-gray-500 block">
+                                Director
+                              </Typography>
+                              <Typography variant="body2" className="font-medium">
+                                {selectedMedia.director}
+                              </Typography>
+                            </Box>
+                          </Box>
+                        </Grid>
+
+                        <Grid item xs={6}>
+                          <Box className="flex items-center space-x-2">
+                            <BudgetIcon className="text-green-600" />
+                            <Box>
+                              <Typography variant="caption" className="text-gray-500 block">
+                                Budget
+                              </Typography>
+                              <Typography variant="body2" className="font-medium">
+                                {selectedMedia.budget}
+                              </Typography>
+                            </Box>
+                          </Box>
+                        </Grid>
+
+                        <Grid item xs={6}>
+                          <Box className="flex items-center space-x-2">
+                            <LocationIcon className="text-red-600" />
+                            <Box>
+                              <Typography variant="caption" className="text-gray-500 block">
+                                Location
+                              </Typography>
+                              <Typography variant="body2" className="font-medium">
+                                {selectedMedia.location}
+                              </Typography>
+                            </Box>
+                          </Box>
+                        </Grid>
+
+                        <Grid item xs={6}>
+                          <Box className="flex items-center space-x-2">
+                            <DurationIcon className="text-purple-600" />
+                            <Box>
+                              <Typography variant="caption" className="text-gray-500 block">
+                                Duration
+                              </Typography>
+                              <Typography variant="body2" className="font-medium">
+                                {selectedMedia.duration}
+                              </Typography>
+                            </Box>
+                          </Box>
+                        </Grid>
+
+                        <Grid item xs={6}>
+                          <Box className="flex items-center space-x-2">
+                            <YearIcon className="text-orange-600" />
+                            <Box>
+                              <Typography variant="caption" className="text-gray-500 block">
+                                Year/Time
+                              </Typography>
+                              <Typography variant="body2" className="font-medium">
+                                {selectedMedia.year_time}
+                              </Typography>
+                            </Box>
+                          </Box>
+                        </Grid>
+                      </Grid>
+
+                      {/* Action Buttons */}
+                      <Box className="flex space-x-2 pt-4 border-t">
+                        <IconButton
+                          onClick={() => {
+                            closeImagePreview();
+                            onEdit(selectedMedia);
+                          }}
+                          className="text-blue-600 hover:bg-blue-50 transition-all duration-300"
+                          title="Edit"
+                        >
+                          <EditIcon />
+                          <Typography variant="body2" className="ml-1">
+                            Edit
+                          </Typography>
+                        </IconButton>
+                        <IconButton
+                          onClick={() => {
+                            closeImagePreview();
+                            onDelete(selectedMedia.id);
+                          }}
+                          className="text-red-600 hover:bg-red-50 transition-all duration-300"
+                          title="Delete"
+                        >
+                          <DeleteIcon />
+                          <Typography variant="body2" className="ml-1">
+                            Delete
+                          </Typography>
+                        </IconButton>
+                      </Box>
+                    </Box>
+                  </Grid>
+                </Grid>
+              </CardContent>
+            </Card>
+          )}
+        </DialogContent>
+      </Dialog>
+
       {/* Search and Filter Controls */}
-      <Paper className="p-4 shadow-lg">
+      <Paper className="p-4 shadow-lg transition-all duration-300 hover:shadow-xl">
         <Grid container spacing={2} alignItems="center">
           <Grid item xs={12} sm={6} md={3}>
             <TextField
@@ -195,7 +396,7 @@ export const MediaTable: React.FC<MediaTableProps> = ({
               onClick={clearFilters}
               disabled={!searchTerm && typeFilter === 'All' && !directorFilter}
               size="small"
-              className="text-gray-600"
+              className="text-gray-600 transition-colors hover:text-gray-800"
             >
               <ClearIcon />
               <Typography variant="body2" className="ml-1">
@@ -208,7 +409,7 @@ export const MediaTable: React.FC<MediaTableProps> = ({
 
       {/* Results Message */}
       {searchTerm || typeFilter !== 'All' || directorFilter ? (
-        <Alert severity="info" className="mb-2">
+        <Alert severity="info" className="mb-2 transition-all duration-300">
           Showing {displayMedia.length} result{displayMedia.length !== 1 ? 's' : ''} 
           {searchTerm && ` for "${searchTerm}"`}
           {typeFilter !== 'All' && ` • Type: ${typeFilter}`}
@@ -217,7 +418,7 @@ export const MediaTable: React.FC<MediaTableProps> = ({
       ) : null}
 
       {displayMedia.length === 0 && !loading ? (
-        <Paper className="p-8 text-center">
+        <Paper className="p-8 text-center transition-all duration-300 hover:shadow-lg">
           <Typography variant="h6" color="textSecondary">
             {media.length === 0 
               ? "No media found. Add your first favorite movie or TV show!"
@@ -225,10 +426,14 @@ export const MediaTable: React.FC<MediaTableProps> = ({
           </Typography>
         </Paper>
       ) : (
-        <TableContainer component={Paper} className="shadow-lg">
+        <TableContainer 
+          component={Paper} 
+          className="shadow-lg transition-all duration-300 hover:shadow-2xl"
+        >
           <Table>
             <TableHead className="bg-gradient-to-r from-gray-800 to-gray-600">
               <TableRow>
+                <TableCell className="text-white font-bold">Poster</TableCell>
                 <TableCell className="text-white font-bold">Title</TableCell>
                 <TableCell className="text-white font-bold">Type</TableCell>
                 <TableCell className="text-white font-bold">Director</TableCell>
@@ -240,64 +445,105 @@ export const MediaTable: React.FC<MediaTableProps> = ({
               </TableRow>
             </TableHead>
             <TableBody>
-              {displayMedia.map((item) => (
-                <TableRow
-                  key={item.id}
-                  className="hover:bg-gray-50 transition-colors"
-                >
-                  <TableCell>
-                    <div>
-                      <Typography variant="subtitle2" fontWeight="bold">
-                        {item.title}
-                      </Typography>
-                      {item.description && (
-                        <Typography variant="caption" color="textSecondary">
-                          {item.description.length > 50
-                            ? `${item.description.substring(0, 50)}...`
-                            : item.description}
+              {displayMedia.map((item) => {
+                const imageUrl = getImageUrl(item.imageUrl);
+                const hasImage = !!imageUrl;
+                
+                return (
+                  <TableRow
+                    key={item.id}
+                    className="transition-all duration-300 hover:shadow-lg hover:bg-gray-50 hover:scale-[1.02] hover:z-10 relative"
+                    sx={{
+                      '&:hover': {
+                        transform: 'translateY(-2px)',
+                        boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)',
+                      },
+                    }}
+                  >
+                    <TableCell>
+                      <Box className="flex items-center space-x-2">
+                        <Avatar
+                          src={imageUrl}
+                          variant="rounded"
+                          sx={{ 
+                            width: "100%", 
+                            height: "80px", 
+                            border: '2px solid #e0e0e0',
+                            objectFit: 'cover',
+                            cursor: hasImage ? 'pointer' : 'default',
+                            transition: 'all 0.3s ease',
+                            '&:hover': hasImage ? {
+                              transform: 'scale(1.1)',
+                              boxShadow: '0 8px 25px rgba(0,0,0,0.3)',
+                            } : {},
+                          }}
+                          onClick={() => hasImage && handleImagePreview(item)}
+                          imgProps={{
+                            onError: (e) => {
+                              const target = e.target as HTMLImageElement;
+                              target.style.display = 'none';
+                            }
+                          }}
+                        />
+                      </Box>
+                    </TableCell>
+                    <TableCell>
+                      <div>
+                        <Typography variant="subtitle2" fontWeight="bold">
+                          {item.title}
                         </Typography>
-                      )}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <Chip
-                      label={item.type}
-                      color={item.type === 'Movie' ? 'primary' : 'secondary'}
-                      size="small"
-                    />
-                  </TableCell>
-                  <TableCell>{item.director}</TableCell>
-                  <TableCell>{item.budget}</TableCell>
-                  <TableCell>{item.location}</TableCell>
-                  <TableCell>{item.duration}</TableCell>
-                  <TableCell>{item.yearTime}</TableCell>
-                  <TableCell>
-                    <div className="flex space-x-2">
-                      <IconButton
+                        {item.description && (
+                          <Typography variant="caption" color="textSecondary">
+                            {item.description.length > 50
+                              ? `${item.description.substring(0, 50)}...`
+                              : item.description}
+                          </Typography>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Chip
+                        label={item.type}
+                        color={item.type === 'Movie' ? 'primary' : 'secondary'}
                         size="small"
-                        onClick={() => onEdit(item)}
-                        className="text-blue-600 hover:bg-blue-50"
-                      >
-                        <EditIcon fontSize="small" />
-                      </IconButton>
-                      <IconButton
-                        size="small"
-                        onClick={() => onDelete(item.id)}
-                        className="text-red-600 hover:bg-red-50"
-                      >
-                        <DeleteIcon fontSize="small" />
-                      </IconButton>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
+                        className="transition-all duration-300 hover:shadow-md"
+                      />
+                    </TableCell>
+                    <TableCell>{item.director}</TableCell>
+                    <TableCell>{item.budget}</TableCell>
+                    <TableCell>{item.location}</TableCell>
+                    <TableCell>{item.duration}</TableCell>
+                    <TableCell>{item.year_time}</TableCell>
+                    <TableCell>
+                      <div className="flex space-x-2">
+                        <IconButton
+                          size="small"
+                          onClick={() => onEdit(item)}
+                          className="text-blue-600 hover:bg-blue-50 transition-all duration-300 hover:scale-110"
+                          title="Edit"
+                        >
+                          <EditIcon fontSize="small" />
+                        </IconButton>
+                        <IconButton
+                          size="small"
+                          onClick={() => onDelete(item.id)}
+                          className="text-red-600 hover:bg-red-50 transition-all duration-300 hover:scale-110"
+                          title="Delete"
+                        >
+                          <DeleteIcon fontSize="small" />
+                        </IconButton>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
             </TableBody>
           </Table>
         </TableContainer>
       )}
 
       {(loading || isFetching) && (
-        <Box className="flex justify-center py-4">
+        <Box className="flex justify-center py-4 transition-all duration-300">
           <CircularProgress />
           <Typography className="ml-2" variant="body2" color="textSecondary">
             Loading more...
@@ -306,7 +552,7 @@ export const MediaTable: React.FC<MediaTableProps> = ({
       )}
 
       {!hasMore && media.length > 0 && (
-        <Box className="text-center py-4">
+        <Box className="text-center py-4 transition-all duration-300">
           <Typography variant="body2" color="textSecondary">
             No more media to load.
           </Typography>
