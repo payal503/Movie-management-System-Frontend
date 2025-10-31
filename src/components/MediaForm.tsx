@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useRef } from 'react';
 import {
     Dialog,
     DialogTitle,
@@ -9,11 +9,15 @@ import {
     MenuItem,
     Box,
     Grid,
+    Avatar,
+    IconButton,
+    Typography,
 } from '@mui/material';
 import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import * as yup from 'yup';
 import { Media, MediaCreate } from '../types/media';
+import { AddPhotoAlternate as AddPhotoIcon, Delete as DeleteIcon } from '@mui/icons-material';
 
 const mediaSchema = yup.object({
     title: yup.string().required('Title is required'),
@@ -22,7 +26,7 @@ const mediaSchema = yup.object({
     budget: yup.string().required('Budget is required'),
     location: yup.string().required('Location is required'),
     duration: yup.string().required('Duration is required'),
-    yearTime: yup.string().required('Year/Time is required'),
+    year_time: yup.string().required('Year/Time is required'),
     description: yup.string().optional(),
 });
 
@@ -39,6 +43,10 @@ export const MediaForm: React.FC<MediaFormProps> = ({
     onSubmit,
     editingMedia,
 }) => {
+    const [posterPreview, setPosterPreview] = useState<string | null>(null);
+    const [posterFile, setPosterFile] = useState<File | null>(null);
+    const fileInputRef = useRef<HTMLInputElement>(null);
+
     const {
         register,
         handleSubmit,
@@ -53,7 +61,7 @@ export const MediaForm: React.FC<MediaFormProps> = ({
             budget: '',
             location: '',
             duration: '',
-            yearTime: '',
+            year_time: '',
             description: '',
         },
     });
@@ -61,6 +69,11 @@ export const MediaForm: React.FC<MediaFormProps> = ({
     React.useEffect(() => {
         if (editingMedia) {
             reset(editingMedia);
+            if (editingMedia.imageUrl) {
+                setPosterPreview(editingMedia.imageUrl);
+            } else {
+                setPosterPreview(null);
+            }
         } else {
             reset({
                 title: '',
@@ -69,24 +82,64 @@ export const MediaForm: React.FC<MediaFormProps> = ({
                 budget: '',
                 location: '',
                 duration: '',
-                yearTime: '',
+                year_time: '',
                 description: '',
             });
+            setPosterPreview(null);
+            setPosterFile(null);
         }
     }, [editingMedia, reset, open]);
 
+    const handlePosterUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (file) {
+            setPosterFile(file);
+            const previewUrl = URL.createObjectURL(file);
+            setPosterPreview(previewUrl);
+        }
+    };
+
+    const handleRemovePoster = () => {
+        setPosterPreview(null);
+        setPosterFile(null);
+        if (fileInputRef.current) {
+            fileInputRef.current.value = '';
+        }
+    };
+
     const handleFormSubmit = async (data: MediaCreate) => {
-        const success = await onSubmit(data);
+        const submitData: MediaCreate = {
+            ...data,
+            imageFile: posterFile || undefined,
+        };
+
+        const success = await onSubmit(submitData);
         if (success) {
             onClose();
             reset();
+            setPosterPreview(null);
+            setPosterFile(null);
         }
     };
 
     const handleCancel = () => {
         onClose();
         reset();
+        setPosterPreview(null);
+        setPosterFile(null);
     };
+
+    const triggerFileInput = () => {
+        if (fileInputRef.current) {
+            fileInputRef.current.click();
+        }
+    };
+
+    const hasExistingImage = editingMedia?.imageUrl && !posterFile;
+    const showCurrentPoster = posterPreview || editingMedia?.imageUrl;
+
+    console.log("showCurrentPoster -- ", showCurrentPoster);
+
 
     return (
         <Dialog open={open} onClose={handleCancel} maxWidth="md" fullWidth>
@@ -95,10 +148,88 @@ export const MediaForm: React.FC<MediaFormProps> = ({
             </DialogTitle>
             <form onSubmit={handleSubmit(handleFormSubmit)}>
                 <DialogContent>
-                    {/* Use Material-UI Grid for proper spacing */}
-                    <Box sx={{ pt: 1}}>
+                    <Box sx={{ pt: 2 }}>
+                        <Grid container spacing={3} sx={{ mb: 3 }}>
+                            <Grid item xs={12}>
+                                <Typography variant="h6" gutterBottom>
+                                    Movie Poster
+                                </Typography>
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 3 }}>
+                                    <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>
+                                        {showCurrentPoster ? (
+                                            <Box sx={{ position: 'relative' }}>
+                                                <Avatar
+                                                    src={`http://localhost:5000${showCurrentPoster}`}
+                                                    variant="rounded"
+                                                    sx={{
+                                                        width: 120,
+                                                        height: 160,
+                                                        border: '2px solid #e0e0e0',
+                                                    }}
+                                                />
+                                                <IconButton
+                                                    size="small"
+                                                    onClick={handleRemovePoster}
+                                                    sx={{
+                                                        position: 'absolute',
+                                                        top: -8,
+                                                        right: -8,
+                                                        backgroundColor: 'error.main',
+                                                        color: 'white',
+                                                        '&:hover': {
+                                                            backgroundColor: 'error.dark',
+                                                        },
+                                                    }}
+                                                >
+                                                    <DeleteIcon fontSize="small" />
+                                                </IconButton>
+                                            </Box>
+                                        ) : (
+                                            <Avatar
+                                                variant="rounded"
+                                                sx={{
+                                                    width: 120,
+                                                    height: 160,
+                                                    bgcolor: 'grey.200',
+                                                }}
+                                            >
+                                                <AddPhotoIcon sx={{ fontSize: 40, color: 'grey.400' }} />
+                                            </Avatar>
+                                        )}
+                                        <Typography variant="caption" color="textSecondary">
+                                            {showCurrentPoster ? 'Current Poster' : 'No Poster'}
+                                        </Typography>
+                                    </Box>
+
+                                    <Box>
+                                        <input
+                                            accept="image/*"
+                                            style={{ display: 'none' }}
+                                            id="poster-upload"
+                                            type="file"
+                                            onChange={handlePosterUpload}
+                                            ref={fileInputRef}
+                                        />
+                                        <Button
+                                            variant="outlined"
+                                            component="span"
+                                            startIcon={<AddPhotoIcon />}
+                                            onClick={triggerFileInput}
+                                        >
+                                            {showCurrentPoster ? 'Change Poster' : 'Upload Poster'}
+                                        </Button>
+                                        <Typography variant="caption" display="block" sx={{ mt: 1, color: 'text.secondary' }}>
+                                            {hasExistingImage && !posterPreview
+                                                ? 'Current poster will be kept'
+                                                : 'Select a poster image'
+                                            }
+                                        </Typography>
+                                    </Box>
+                                </Box>
+                            </Grid>
+                        </Grid>
+
                         <Grid container spacing={3}>
-                            {/* Title */}
                             <Grid item xs={12} md={6}>
                                 <TextField
                                     label="Title"
@@ -110,7 +241,6 @@ export const MediaForm: React.FC<MediaFormProps> = ({
                                 />
                             </Grid>
 
-                            {/* Type */}
                             <Grid item xs={12} md={6}>
                                 <TextField
                                     label="Type"
@@ -126,7 +256,6 @@ export const MediaForm: React.FC<MediaFormProps> = ({
                                 </TextField>
                             </Grid>
 
-                            {/* Director */}
                             <Grid item xs={12} md={6}>
                                 <TextField
                                     label="Director"
@@ -138,7 +267,6 @@ export const MediaForm: React.FC<MediaFormProps> = ({
                                 />
                             </Grid>
 
-                            {/* Budget */}
                             <Grid item xs={12} md={6}>
                                 <TextField
                                     label="Budget"
@@ -150,7 +278,6 @@ export const MediaForm: React.FC<MediaFormProps> = ({
                                 />
                             </Grid>
 
-                            {/* Location */}
                             <Grid item xs={12} md={6}>
                                 <TextField
                                     label="Location"
@@ -162,7 +289,6 @@ export const MediaForm: React.FC<MediaFormProps> = ({
                                 />
                             </Grid>
 
-                            {/* Duration */}
                             <Grid item xs={12} md={6}>
                                 <TextField
                                     label="Duration"
@@ -175,20 +301,18 @@ export const MediaForm: React.FC<MediaFormProps> = ({
                                 />
                             </Grid>
 
-                            {/* Year/Time */}
                             <Grid item xs={12} md={6}>
                                 <TextField
                                     label="Year/Time"
                                     fullWidth
                                     variant="outlined"
-                                    {...register('yearTime')}
-                                    error={!!errors.yearTime}
-                                    helperText={errors.yearTime?.message}
+                                    {...register('year_time')}
+                                    error={!!errors.year_time}
+                                    helperText={errors.year_time?.message}
                                     placeholder="e.g., 2010 or 2008-2013"
                                 />
                             </Grid>
 
-                            {/* Description - Full width */}
                             <Grid item xs={12}>
                                 <TextField
                                     label="Description"

@@ -88,12 +88,15 @@ function App() {
     }
   };
 
- const handleLoadMore = () => {
-  if (pagination.hasNext && !loading) {
-    console.log('⬇️ Loading more media...');
-    loadMedia(pagination.currentPage + 1);
-  }
-};
+  const handleLoadMore = () => {
+    if (pagination.hasNext && !loading) {
+      console.log('⬇️ Loading more media...');
+      loadMedia(pagination.currentPage + 1);
+    }
+  };
+
+  console.log("media --> ", media);
+
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50">
